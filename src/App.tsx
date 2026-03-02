@@ -112,6 +112,11 @@ export default function App() {
   }, [generateSecret]);
 
   useEffect(() => {
+    const pageTitle = mode === 'password' ? 'DVF Pass' : mode === 'token' ? 'DVF Token' : 'DVF Guid';
+    document.title = pageTitle;
+  }, [mode]);
+
+  useEffect(() => {
     const handlePopState = () => {
       setMode(getModeFromPath(window.location.pathname));
     };
