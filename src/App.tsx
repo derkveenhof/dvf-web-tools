@@ -26,6 +26,18 @@ function getModeFromPath(pathname: string): Mode {
   return 'password';
 }
 
+function getModeFromHostname(hostname: string): Mode | undefined {
+  const subdomain = hostname.split('.')[0]?.toLowerCase();
+  if (subdomain === 'token') return 'token';
+  if (subdomain === 'guid') return 'guid';
+  if (subdomain === 'pass') return 'password';
+  return undefined;
+}
+
+function getModeFromLocation(pathname: string, hostname: string): Mode {
+  return getModeFromHostname(hostname) ?? getModeFromPath(pathname);
+}
+
 // AFAS Brand Colors
 const AFAS_BLUE = '#004b99';
 const AFAS_LIGHT_BLUE = '#e6f0fa';
@@ -36,7 +48,7 @@ const AFAS_BORDER = '#dcdcdc';
 export default function App() {
   const [mode, setMode] = useState<Mode>(() => {
     if (typeof window === 'undefined') return 'password';
-    return getModeFromPath(window.location.pathname);
+    return getModeFromLocation(window.location.pathname, window.location.hostname);
   });
   const [password, setPassword] = useState('');
   const [length, setLength] = useState(32);
@@ -118,7 +130,7 @@ export default function App() {
 
   useEffect(() => {
     const handlePopState = () => {
-      setMode(getModeFromPath(window.location.pathname));
+      setMode(getModeFromLocation(window.location.pathname, window.location.hostname));
     };
 
     window.addEventListener('popstate', handlePopState);
