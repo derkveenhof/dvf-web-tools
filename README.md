@@ -1,61 +1,90 @@
-# SecurePass Generator
+# DVF Pass
 
-Een veilige, volledig client-side wachtwoord- en token-generator, ontworpen met de professionele stijl van **AFAS Software**.
+Een statische React/Vite webapp voor lokale generatie van wachtwoorden, tokens en GUID's.
 
 > [!IMPORTANT]
-> **AI-Gegenereerd Project**
-> Deze applicatie is volledig ontworpen en gecodeerd door een AI-assistent (Google Gemini) in opdracht van de gebruiker. Van de cryptografische logica tot de AFAS-geïnspireerde styling: elk onderdeel is door de AI samengesteld om te voldoen aan specifieke veiligheids- en designwensen.
+> **AI-gegenereerd en AI-doorontwikkeld**
+> Deze applicatie is initieel opgezet met AI (Google AI Studio) en daarna verder ontwikkeld met AI-assistentie (Copilot in VS Code). Zowel de functionele opzet als een groot deel van de implementatie en refactors zijn met AI tot stand gekomen.
 
-## 🚀 Kenmerken
+## Doel en scope
 
-- **100% Client-Side**: Alle wachtwoorden en tokens worden lokaal in je browser gegenereerd met de `Web Crypto API`. Er wordt geen data naar een server verzonden.
-- **AFAS Look & Feel**: Een interface die naadloos aansluit bij de zakelijke uitstraling van AFAS (idp.afasonline.com), inclusief het herkenbare blauwe kleurenpalet en achtergrondpatroon.
-- **Wachtwoord Modus**:
-  - Instelbare lengte van 8 t/m 32 karakters (standaard 32).
-  - Opties voor hoofdletters, kleine letters, cijfers en symbolen.
-  - Real-time veiligheidsindicator met dynamische feedback.
-- **OpenSSL Token Modus**:
-  - Genereert cryptografisch sterke 32-byte (256-bit) tokens.
-  - Vergelijkbaar met `openssl rand -base64 32`.
-  - Ondersteuning voor **Base64URL** (URL-friendly) en standaard Base64.
-- **Gebruiksvriendelijk**: Snel kopiëren naar klembord via iconen en intuïtieve bediening.
+DVF Pass genereert client-side:
 
-## 🛠️ Technologieën
+- wachtwoorden (configureerbare charset + lengte),
+- OpenSSL-achtige Base64 tokens,
+- GUID's voor unieke identificatie.
 
-- **React 19** & **TypeScript**
-- **Tailwind CSS 4** (Styling)
-- **Motion** (Animaties)
-- **Lucide React** (Iconen)
-- **Web Crypto API** (Veilige RNG)
+Er is geen backend nodig voor de kernfunctionaliteit.
 
-## 📦 Lokale Installatie
+## Architectuur
 
-Wil je dit project lokaal draaien? Volg deze stappen:
+- **Runtime**: Browser-only, single-page app.
+- **Entry points**:
+  - `index.html` → `src/main.tsx`
+  - `src/main.tsx` → `src/App.tsx`
+- **Styling**: Tailwind CSS 4 via Vite plugin + utility classes in JSX.
+- **Assets**:
+  - `public/images/patroon.png` (achtergrond)
+  - `public/favicon.ico` (favicon)
 
-1. **Clone de repository**:
-   ```bash
-   git clone https://github.com/JOUW_GEBRUIKERSNAAM/securepass-generator.git
-   cd securepass-generator
-   ```
+## Cryptografie en generatiegedrag
 
-2. **Installeer afhankelijkheden**:
-   ```bash
-   npm install
-   ```
+### Wachtwoordmodus
 
-3. **Start de development server**:
-   ```bash
-   npm run dev
-   ```
+- RNG: `window.crypto.getRandomValues()`.
+- Charset is samengesteld uit geselecteerde groepen:
+  - A-Z, a-z, 0-9, symbolen.
+- Lengte: 8-32 (standaard 32).
 
-4. **Bouw voor productie**:
-   ```bash
-   npm run build
-   ```
+### Tokenmodus
 
-## 🛡️ Veiligheid
+- RNG: `window.crypto.getRandomValues(new Uint8Array(32))`.
+- 32 bytes worden omgezet naar Base64.
+- Optioneel Base64URL-normalisatie:
+  - `+` → `-`
+  - `/` → `_`
+  - trailing `=` verwijderd.
+- Praktisch equivalent aan `openssl rand -base64 32`.
 
-Deze tool is gebouwd met privacy als hoogste prioriteit. Omdat de generatie plaatsvindt via `window.crypto.getRandomValues()`, ben je verzekerd van een cryptografisch sterke bron van willekeur die voldoet aan moderne standaarden voor wachtwoordbeheer.
+### GUID-modus
 
----
-*Gemaakt met behulp van AI-technologie.*
+- Generator: `window.crypto.randomUUID()`.
+- Standaard output: RFC4122-vorm (bijv. `3ffddc0e-00a8-46b6-b947-2464b9fa0ab7`).
+- Extra opties in UI:
+  - `To Upper`
+  - `Zonder hyphens`
+- **Belangrijk**: GUID's zijn voor identificatie, niet voor secrets/wachtwoorden/tokens.
+
+## Security-notes
+
+- Generatie draait volledig lokaal in de browser.
+- Geen API-calls of server roundtrips voor gegenereerde waarden.
+- Clipboard-copy gebruikt de browser `navigator.clipboard` API.
+
+## Build en scripts
+
+`package.json` scripts:
+
+- `npm run dev` → Vite dev server op poort `3000`.
+- `npm run build` → productiebuild naar `dist/`.
+- `npm run preview` → lokale preview van build output.
+- `npm run lint` → TypeScript typecheck (`tsc --noEmit`).
+- `npm run clean` → verwijdert `dist/` (cross-platform node script).
+
+## Deploy (Vercel)
+
+Dit project is een standaard statische Vite-app en werkt direct op Vercel met:
+
+- Build command: `npm run build`
+- Output directory: `dist`
+
+Er zijn momenteel geen runtime secrets/environment variabelen vereist voor productie.
+
+## Lokale setup
+
+```bash
+git clone https://github.com/derkveenhof/pass-and-opaque-token-generator.git
+cd pass-and-opaque-token-generator
+npm install
+npm run dev
+```

@@ -20,7 +20,7 @@ const AFAS_TEXT = '#333333';
 const AFAS_BORDER = '#dcdcdc';
 
 export default function App() {
-  const [mode, setMode] = useState<'password' | 'token'>('password');
+  const [mode, setMode] = useState<'password' | 'token' | 'guid'>('password');
   const [password, setPassword] = useState('');
   const [length, setLength] = useState(32);
   const [includeUppercase, setIncludeUppercase] = useState(true);
@@ -28,6 +28,8 @@ export default function App() {
   const [includeNumbers, setIncludeNumbers] = useState(true);
   const [includeSymbols, setIncludeSymbols] = useState(true);
   const [tokenUrlFriendly, setTokenUrlFriendly] = useState(true);
+  const [guidUppercase, setGuidUppercase] = useState(false);
+  const [guidWithoutHyphens, setGuidWithoutHyphens] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const generateSecret = useCallback(() => {
@@ -52,7 +54,7 @@ export default function App() {
       }
 
       setPassword(generatedPassword);
-    } else {
+    } else if (mode === 'token') {
       // Token mode: 32 bytes (256 bits)
       const bytes = new Uint8Array(32);
       window.crypto.getRandomValues(bytes);
@@ -73,9 +75,20 @@ export default function App() {
       }
       
       setPassword(base64);
+    } else {
+      let guidValue: string = window.crypto.randomUUID();
+
+      if (guidWithoutHyphens) {
+        guidValue = guidValue.replace(/-/g, '');
+      }
+      if (guidUppercase) {
+        guidValue = guidValue.toUpperCase();
+      }
+
+      setPassword(guidValue);
     }
     setCopied(false);
-  }, [mode, length, includeUppercase, includeLowercase, includeNumbers, includeSymbols, tokenUrlFriendly]);
+  }, [mode, length, includeUppercase, includeLowercase, includeNumbers, includeSymbols, tokenUrlFriendly, guidUppercase, guidWithoutHyphens]);
 
   useEffect(() => {
     generateSecret();
@@ -99,6 +112,14 @@ export default function App() {
       icon: ShieldCheck, 
       bg: 'bg-indigo-50',
       description: 'Dit is een cryptografisch sterke 256-bit token.'
+    };
+
+    if (mode === 'guid') return {
+      label: 'Unieke Identifier',
+      color: 'text-amber-600',
+      icon: Info,
+      bg: 'bg-amber-50',
+      description: 'GUID\'s zijn niet bedoeld voor wachtwoorden of andere security-doeleinden.'
     };
     
     if (length < 12) return { 
@@ -147,9 +168,13 @@ export default function App() {
               <Lock className="text-white w-8 h-8" />
             </div>
             <h1 className="text-2xl font-bold text-[#004b99] tracking-tight mb-1">
-              {mode === 'password' ? 'Wachtwoord Generator' : 'Token Generator'}
+              {mode === 'password' ? 'Wachtwoord Generator' : mode === 'token' ? 'Token Generator' : 'GUID Generator'}
             </h1>
-            <p className="text-sm text-[#666]">Beveilig uw account met een sterke {mode === 'password' ? 'code' : 'token'}</p>
+            <p className="text-sm text-[#666]">
+              {mode === 'guid'
+                ? 'Maak een unieke identifier voor herkenning en koppelingen.'
+                : `Beveilig uw account met een sterke ${mode === 'password' ? 'code' : 'token'}`}
+            </p>
           </div>
         </div>
 
@@ -167,13 +192,19 @@ export default function App() {
           >
             OpenSSL Token
           </button>
+          <button 
+            onClick={() => setMode('guid')}
+            className={`flex-1 py-3 text-sm font-bold transition-colors ${mode === 'guid' ? 'text-[#004b99] border-b-2 border-[#004b99]' : 'text-[#999] hover:text-[#666]'}`}
+          >
+            GUID
+          </button>
         </div>
 
         {/* Password Display Section */}
         <div className="p-8 space-y-6">
           <div className="space-y-2">
             <label className="text-xs font-bold text-[#666] uppercase tracking-wider">
-              Uw nieuwe {mode === 'password' ? 'wachtwoord' : 'token'}
+              Uw nieuwe {mode === 'password' ? 'wachtwoord' : mode === 'token' ? 'token' : 'guid'}
             </label>
             <div className="relative">
               <div className="w-full bg-[#f9f9f9] border border-[#dcdcdc] rounded p-4 pr-20 break-all min-h-[80px] flex items-center justify-center text-center transition-all focus-within:border-[#004b99] focus-within:ring-1 focus-within:ring-[#004b99]">
@@ -263,7 +294,7 @@ export default function App() {
                   />
                 </div>
               </>
-            ) : (
+            ) : mode === 'token' ? (
               <div className="space-y-4">
                 <div className="p-4 bg-zinc-50 rounded border border-[#eee]">
                   <p className="text-xs text-[#666] leading-relaxed mb-4">
@@ -281,6 +312,26 @@ export default function App() {
                   </p>
                 </div>
               </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-4 bg-amber-50 rounded border border-amber-200">
+                  <p className="text-xs text-amber-800 leading-relaxed mb-4">
+                    GUID&apos;s zijn bedoeld als unieke identifier en niet als wachtwoord of security-token.
+                  </p>
+                  <div className="grid grid-cols-1 gap-3">
+                    <Checkbox 
+                      label="To Upper" 
+                      checked={guidUppercase} 
+                      onChange={() => setGuidUppercase(!guidUppercase)} 
+                    />
+                    <Checkbox 
+                      label="Zonder hyphens" 
+                      checked={guidWithoutHyphens} 
+                      onChange={() => setGuidWithoutHyphens(!guidWithoutHyphens)} 
+                    />
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -289,7 +340,7 @@ export default function App() {
         <div className="bg-[#f9f9f9] p-6 border-t border-[#eee] flex items-start gap-3">
           <Info className="w-4 h-4 text-[#999] mt-0.5 shrink-0" />
           <p className="text-[11px] text-[#666] leading-relaxed flex-1">
-            Deze {mode === 'password' ? 'code' : 'token'} wordt lokaal op uw apparaat gegenereerd met de Web Crypto API. 
+            Deze {mode === 'password' ? 'code' : mode === 'token' ? 'token' : 'guid'} wordt lokaal op uw apparaat gegenereerd met de Web Crypto API. 
             Niets wordt verzonden naar de server.
           </p>
           <a
