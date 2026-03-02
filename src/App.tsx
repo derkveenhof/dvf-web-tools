@@ -288,23 +288,21 @@ export default function App() {
         {/* Footer Info */}
         <div className="bg-[#f9f9f9] p-6 border-t border-[#eee] flex items-start gap-3">
           <Info className="w-4 h-4 text-[#999] mt-0.5 shrink-0" />
-          <p className="text-[11px] text-[#666] leading-relaxed">
+          <p className="text-[11px] text-[#666] leading-relaxed flex-1">
             Deze {mode === 'password' ? 'code' : 'token'} wordt lokaal op uw apparaat gegenereerd met de Web Crypto API. 
             Niets wordt verzonden naar de server.
           </p>
+          <a
+            href="https://github.com/derkveenhof/pass-and-opaque-token-generator"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Open GitHub repository"
+            className="text-[#999] hover:text-[#004b99] transition-colors self-center shrink-0"
+          >
+            <Github className="w-4 h-4" />
+          </a>
         </div>
       </motion.div>
-      
-      {/* GitHub Link */}
-      <a
-        href="https://github.com/derkveenhof/pass-and-opaque-token-generator"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Open GitHub repository"
-        className="fixed bottom-6 text-[#999] hover:text-[#004b99] transition-colors"
-      >
-        <Github className="w-4 h-4" />
-      </a>
     </div>
   );
 }
