@@ -201,7 +201,7 @@ export default function App() {
         </div>
 
         {/* Password Display Section */}
-        <div className="p-8 space-y-6">
+        <div className="p-8 space-y-6 md:min-h-[430px]">
           <div className="space-y-2">
             <label className="text-xs font-bold text-[#666] uppercase tracking-wider">
               Uw nieuwe {mode === 'password' ? 'wachtwoord' : mode === 'token' ? 'token' : 'guid'}
