@@ -1,0 +1,5 @@
+{
+  "name": "SecurePass Generator",
+  "description": "A secure, fully client-side password generator with customizable length and character sets.",
+  "requestFramePermissions": []
+}
