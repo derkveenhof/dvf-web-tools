@@ -12,6 +12,20 @@ const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz';
 const NUMBERS = '0123456789';
 const SYMBOLS = '!@#$%^&*()_+-=[]{}|;:,.<>?';
 
+type Mode = 'password' | 'token' | 'guid';
+
+const MODE_ROUTE: Record<Mode, string> = {
+  password: '/pass',
+  token: '/token',
+  guid: '/guid',
+};
+
+function getModeFromPath(pathname: string): Mode {
+  if (pathname === '/token') return 'token';
+  if (pathname === '/guid') return 'guid';
+  return 'password';
+}
+
 // AFAS Brand Colors
 const AFAS_BLUE = '#004b99';
 const AFAS_LIGHT_BLUE = '#e6f0fa';
@@ -20,7 +34,10 @@ const AFAS_TEXT = '#333333';
 const AFAS_BORDER = '#dcdcdc';
 
 export default function App() {
-  const [mode, setMode] = useState<'password' | 'token' | 'guid'>('password');
+  const [mode, setMode] = useState<Mode>(() => {
+    if (typeof window === 'undefined') return 'password';
+    return getModeFromPath(window.location.pathname);
+  });
   const [password, setPassword] = useState('');
   const [length, setLength] = useState(32);
   const [includeUppercase, setIncludeUppercase] = useState(true);
@@ -93,6 +110,26 @@ export default function App() {
   useEffect(() => {
     generateSecret();
   }, [generateSecret]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setMode(getModeFromPath(window.location.pathname));
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  const navigateToMode = (nextMode: Mode) => {
+    setMode(nextMode);
+
+    const targetPath = MODE_ROUTE[nextMode];
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState({}, '', targetPath);
+    }
+  };
 
   const copyToClipboard = async () => {
     if (!password) return;
@@ -181,19 +218,19 @@ export default function App() {
         {/* Mode Switcher */}
         <div className="flex border-b border-[#eee]">
           <button 
-            onClick={() => setMode('password')}
+            onClick={() => navigateToMode('password')}
             className={`flex-1 py-3 text-sm font-bold transition-colors ${mode === 'password' ? 'text-[#004b99] border-b-2 border-[#004b99]' : 'text-[#999] hover:text-[#666]'}`}
           >
             Wachtwoord
           </button>
           <button 
-            onClick={() => setMode('token')}
+            onClick={() => navigateToMode('token')}
             className={`flex-1 py-3 text-sm font-bold transition-colors ${mode === 'token' ? 'text-[#004b99] border-b-2 border-[#004b99]' : 'text-[#999] hover:text-[#666]'}`}
           >
             OpenSSL Token
           </button>
           <button 
-            onClick={() => setMode('guid')}
+            onClick={() => navigateToMode('guid')}
             className={`flex-1 py-3 text-sm font-bold transition-colors ${mode === 'guid' ? 'text-[#004b99] border-b-2 border-[#004b99]' : 'text-[#999] hover:text-[#666]'}`}
           >
             GUID
