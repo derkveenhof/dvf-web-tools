@@ -130,7 +130,7 @@ export default function App() {
     <div 
       className="min-h-screen bg-[#f0f2f5] flex items-center justify-center p-4 font-sans text-[#333]"
       style={{ 
-        backgroundImage: 'url(https://toolbox.afasonline.com/images/patroon.png)',
+        backgroundImage: 'url(/images/patroon.png)',
         backgroundRepeat: 'repeat',
         backgroundPosition: 'center'
       }}
