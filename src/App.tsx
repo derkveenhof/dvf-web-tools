@@ -12,7 +12,7 @@ const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz';
 const NUMBERS = '0123456789';
 const SYMBOLS = '!@#$%^&*()_+-=[]{}|;:,.<>?';
 
-type Mode = 'password' | 'token' | 'guid';
+type Mode = 'password' | 'token' | 'guid' | 'ip';
 
 type ModeMetadata = {
   title: string;
@@ -23,6 +23,7 @@ const MODE_ROUTE: Record<Mode, string> = {
   password: '/pass',
   token: '/token',
   guid: '/guid',
+  ip: '/ip',
 };
 
 const MODE_METADATA: Record<Mode, ModeMetadata> = {
@@ -37,6 +38,10 @@ const MODE_METADATA: Record<Mode, ModeMetadata> = {
   guid: {
     title: 'DVF Guid',
     description: 'Genereer GUID\'s als unieke identifier (niet bedoeld als security-token).',
+  },
+  ip: {
+    title: 'DVF Publiek IP',
+    description: 'Bekijk je publiek IP-adres en forwarding-informatie via het backend endpoint.',
   },
 };
 
@@ -63,6 +68,7 @@ function setMetaTagByProperty(property: string, content: string): void {
 function getModeFromPath(pathname: string): Mode {
   if (pathname === '/token') return 'token';
   if (pathname === '/guid') return 'guid';
+  if (pathname === '/ip') return 'ip';
   return 'password';
 }
 
@@ -70,9 +76,23 @@ function getModeFromHostname(hostname: string): Mode | undefined {
   const subdomain = hostname.split('.')[0]?.toLowerCase();
   if (subdomain === 'token') return 'token';
   if (subdomain === 'guid') return 'guid';
+  if (subdomain === 'ip') return 'ip';
   if (subdomain === 'pass') return 'password';
   return undefined;
 }
+
+type IpInfoResponse = {
+  ip: string;
+  source: string;
+  forwardedFor: string[];
+  userAgent: string;
+  timestampUtc: string;
+  vercel?: {
+    country?: string;
+    region?: string;
+    city?: string;
+  };
+};
 
 function getModeFromLocation(pathname: string, hostname: string): Mode {
   return getModeFromHostname(hostname) ?? getModeFromPath(pathname);
@@ -99,9 +119,43 @@ export default function App() {
   const [tokenUrlFriendly, setTokenUrlFriendly] = useState(true);
   const [guidUppercase, setGuidUppercase] = useState(false);
   const [guidWithoutHyphens, setGuidWithoutHyphens] = useState(false);
+  const [ipInfo, setIpInfo] = useState<IpInfoResponse | null>(null);
+  const [ipLoading, setIpLoading] = useState(false);
+  const [ipError, setIpError] = useState('');
   const [copied, setCopied] = useState(false);
 
+  const fetchIpInfo = useCallback(async () => {
+    setIpLoading(true);
+    setIpError('');
+
+    try {
+      const response = await fetch('/api/my-ip', {
+        method: 'GET',
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      const data = (await response.json()) as IpInfoResponse;
+      setIpInfo(data);
+    } catch (error) {
+      console.error('Failed to load IP info', error);
+      setIpError('Kon IP-informatie niet ophalen via backend endpoint.');
+      setIpInfo(null);
+    } finally {
+      setIpLoading(false);
+    }
+  }, []);
+
   const generateSecret = useCallback(() => {
+    if (mode === 'ip') {
+      void fetchIpInfo();
+      setCopied(false);
+      return;
+    }
+
     if (mode === 'password') {
       let charset = '';
       if (includeUppercase) charset += UPPERCASE;
@@ -157,7 +211,7 @@ export default function App() {
       setPassword(guidValue);
     }
     setCopied(false);
-  }, [mode, length, includeUppercase, includeLowercase, includeNumbers, includeSymbols, tokenUrlFriendly, guidUppercase, guidWithoutHyphens]);
+  }, [mode, length, includeUppercase, includeLowercase, includeNumbers, includeSymbols, tokenUrlFriendly, guidUppercase, guidWithoutHyphens, fetchIpInfo]);
 
   useEffect(() => {
     generateSecret();
@@ -203,9 +257,10 @@ export default function App() {
   };
 
   const copyToClipboard = async () => {
-    if (!password) return;
+    const valueToCopy = mode === 'ip' ? ipInfo?.ip ?? '' : password;
+    if (!valueToCopy) return;
     try {
-      await navigator.clipboard.writeText(password);
+      await navigator.clipboard.writeText(valueToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -228,6 +283,14 @@ export default function App() {
       icon: Info,
       bg: 'bg-amber-50',
       description: 'GUID\'s zijn niet bedoeld voor wachtwoorden of andere security-doeleinden.'
+    };
+
+    if (mode === 'ip') return {
+      label: ipLoading ? 'Bezig met ophalen...' : 'Netwerkinformatie',
+      color: 'text-sky-700',
+      icon: Info,
+      bg: 'bg-sky-50',
+      description: 'Getoond via backend endpoint op basis van forwarded headers.'
     };
     
     if (length < 12) return { 
@@ -276,11 +339,19 @@ export default function App() {
               <Lock className="text-white w-8 h-8" />
             </div>
             <h1 className="text-2xl font-bold text-[#004b99] tracking-tight mb-1">
-              {mode === 'password' ? 'Wachtwoord Generator' : mode === 'token' ? 'Token Generator' : 'GUID Generator'}
+              {mode === 'password'
+                ? 'Wachtwoord Generator'
+                : mode === 'token'
+                ? 'Token Generator'
+                : mode === 'guid'
+                ? 'GUID Generator'
+                : 'Publiek IP'}
             </h1>
             <p className="text-sm text-[#666]">
               {mode === 'guid'
                 ? 'Maak een unieke identifier voor herkenning en koppelingen.'
+                : mode === 'ip'
+                ? 'Bekijk je publieke netwerkidentiteit via de backend.'
                 : `Beveilig uw account met een sterke ${mode === 'password' ? 'code' : 'token'}`}
             </p>
           </div>
@@ -306,19 +377,55 @@ export default function App() {
           >
             GUID
           </button>
+          <button
+            onClick={() => navigateToMode('ip')}
+            className={`flex-1 py-3 text-sm font-bold transition-colors ${mode === 'ip' ? 'text-[#004b99] border-b-2 border-[#004b99]' : 'text-[#999] hover:text-[#666]'}`}
+          >
+            Publiek IP
+          </button>
         </div>
 
         {/* Password Display Section */}
         <div className="p-8 space-y-6 md:min-h-[430px]">
           <div className="space-y-2">
             <label className="text-xs font-bold text-[#666] uppercase tracking-wider">
-              Uw nieuwe {mode === 'password' ? 'wachtwoord' : mode === 'token' ? 'token' : 'guid'}
+              {mode === 'ip' ? 'Uw publieke ip-informatie' : `Uw nieuwe ${mode === 'password' ? 'wachtwoord' : mode === 'token' ? 'token' : 'guid'}`}
             </label>
             <div className="relative">
               <div className="w-full bg-[#f9f9f9] border border-[#dcdcdc] rounded p-4 pr-20 break-all min-h-[80px] flex items-center justify-center text-center transition-all focus-within:border-[#004b99] focus-within:ring-1 focus-within:ring-[#004b99]">
-                <span className="text-lg font-mono text-[#333] font-medium selection:bg-[#004b99] selection:text-white leading-relaxed">
-                  {password || 'Selecteer minimaal één optie'}
-                </span>
+                {mode === 'ip' ? (
+                  <div className="w-full text-left space-y-2 text-xs text-[#444] font-mono leading-relaxed">
+                    <div>
+                      <span className="font-bold text-[#004b99]">IP:</span>{' '}
+                      {ipLoading ? 'Bezig met ophalen...' : ipInfo?.ip || 'Onbekend'}
+                    </div>
+                    <div>
+                      <span className="font-bold text-[#004b99]">Bron:</span>{' '}
+                      {ipInfo?.source || 'Onbekend'}
+                    </div>
+                    <div>
+                      <span className="font-bold text-[#004b99]">XFF chain:</span>{' '}
+                      {ipInfo?.forwardedFor?.length ? ipInfo.forwardedFor.join(' -> ') : 'Leeg'}
+                    </div>
+                    <div>
+                      <span className="font-bold text-[#004b99]">User-Agent:</span>{' '}
+                      {ipInfo?.userAgent || 'Onbekend'}
+                    </div>
+                    <div>
+                      <span className="font-bold text-[#004b99]">Timestamp (UTC):</span>{' '}
+                      {ipInfo?.timestampUtc || 'Onbekend'}
+                    </div>
+                    <div>
+                      <span className="font-bold text-[#004b99]">Vercel locatie:</span>{' '}
+                      {ipInfo?.vercel?.city || '-'}, {ipInfo?.vercel?.region || '-'}, {ipInfo?.vercel?.country || '-'}
+                    </div>
+                    {ipError && <div className="text-red-600 font-semibold">{ipError}</div>}
+                  </div>
+                ) : (
+                  <span className="text-lg font-mono text-[#333] font-medium selection:bg-[#004b99] selection:text-white leading-relaxed">
+                    {password || 'Selecteer minimaal één optie'}
+                  </span>
+                )}
               </div>
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
                 <button
@@ -331,7 +438,7 @@ export default function App() {
                 <button
                   onClick={copyToClipboard}
                   className={`p-2 transition-colors rounded hover:bg-[#f0f0f0] ${copied ? 'text-emerald-600' : 'text-[#999] hover:text-[#004b99]'}`}
-                  title="Kopiëren"
+                  title={mode === 'ip' ? 'IP kopiëren' : 'Kopiëren'}
                 >
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </button>
@@ -420,7 +527,7 @@ export default function App() {
                   </p>
                 </div>
               </div>
-            ) : (
+            ) : mode === 'guid' ? (
               <div className="space-y-4">
                 <div className="p-4 bg-amber-50 rounded border border-amber-200">
                   <p className="text-xs text-amber-800 leading-relaxed mb-4">
@@ -440,6 +547,18 @@ export default function App() {
                   </div>
                 </div>
               </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-4 bg-sky-50 rounded border border-sky-200">
+                  <p className="text-xs text-sky-900 leading-relaxed mb-3">
+                    Deze tab gebruikt uitsluitend je eigen backend endpoint op <span className="font-mono">/api/my-ip</span>.
+                    Er worden geen externe IP-websites gebruikt.
+                  </p>
+                  <p className="text-[11px] text-sky-800">
+                    Ververs om de actuele requestgegevens opnieuw op te halen.
+                  </p>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -448,8 +567,9 @@ export default function App() {
         <div className="bg-[#f9f9f9] p-6 border-t border-[#eee] flex items-start gap-3">
           <Info className="w-4 h-4 text-[#999] mt-0.5 shrink-0" />
           <p className="text-[11px] text-[#666] leading-relaxed flex-1">
-            Deze {mode === 'password' ? 'code' : mode === 'token' ? 'token' : 'guid'} wordt lokaal op uw apparaat gegenereerd met de Web Crypto API. 
-            Niets wordt verzonden naar de server.
+            {mode === 'ip'
+              ? 'Deze informatie komt uit het backend endpoint en weerspiegelt de headers van de huidige request.'
+              : `Deze ${mode === 'password' ? 'code' : mode === 'token' ? 'token' : 'guid'} wordt lokaal op uw apparaat gegenereerd met de Web Crypto API. Niets wordt verzonden naar de server.`}
           </p>
           <a
             href="https://github.com/derkveenhof/pass-and-opaque-token-generator"

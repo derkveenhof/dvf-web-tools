@@ -12,9 +12,10 @@ DVF Pass genereert client-side:
 
 - wachtwoorden (configureerbare charset + lengte),
 - OpenSSL-achtige Base64 tokens,
-- GUID's voor unieke identificatie.
+- GUID's voor unieke identificatie,
+- publiek IP-overzicht via eigen backend endpoint.
 
-Er is geen backend nodig voor de kernfunctionaliteit.
+Voor de tab Publiek IP wordt een backend endpoint gebruikt.
 
 ## Architectuur
 
@@ -79,6 +80,24 @@ Dit project is een standaard statische Vite-app en werkt direct op Vercel met:
 - Output directory: `dist`
 
 Er zijn momenteel geen runtime secrets/environment variabelen vereist voor productie.
+
+## Publiek IP endpoint
+
+- Endpoint: `GET /api/my-ip`
+- Runtime: Vercel serverless function
+- Gebruikte headers/bronvolgorde:
+  - `x-forwarded-for` (eerste valide IP)
+  - `x-real-ip`
+  - `remoteAddress`
+- Response bevat:
+  - `ip`
+  - `source`
+  - `forwardedFor`
+  - `userAgent`
+  - `timestampUtc`
+  - `vercel.country`, `vercel.region`, `vercel.city`
+
+De app gebruikt hiervoor geen externe publieke IP-websites.
 
 ## Lokale setup
 
