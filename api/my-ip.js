@@ -1,4 +1,4 @@
-const net = require('node:net');
+import net from 'node:net';
 
 function getHeaderValue(req, name) {
   const value = req.headers[name];
@@ -51,7 +51,7 @@ function parseForwardedFor(headerValue) {
     .filter(Boolean);
 }
 
-module.exports = function handler(req, res) {
+export default function handler(req, res) {
   const xForwardedForRaw = getHeaderValue(req, 'x-forwarded-for');
   const xRealIpRaw = getHeaderValue(req, 'x-real-ip');
   const userAgent = getHeaderValue(req, 'user-agent');
@@ -87,4 +87,4 @@ module.exports = function handler(req, res) {
       city: getHeaderValue(req, 'x-vercel-ip-city'),
     },
   });
-};
+}
