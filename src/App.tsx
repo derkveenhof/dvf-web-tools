@@ -604,7 +604,7 @@ export default function App() {
               : `Deze ${mode === 'password' ? 'code' : mode === 'token' ? 'token' : 'guid'} wordt lokaal op uw apparaat gegenereerd met de Web Crypto API. Niets wordt verzonden naar de server.`}
           </p>
           <a
-            href="https://github.com/derkveenhof/pass-and-opaque-token-generator"
+            href="https://github.com/derkveenhof/dvf-web-tools"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Open GitHub repository"

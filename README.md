@@ -134,8 +134,8 @@ export default function handler(req, res) {
 ## Lokale setup
 
 ```bash
-git clone https://github.com/derkveenhof/pass-and-opaque-token-generator.git
-cd pass-and-opaque-token-generator
+git clone https://github.com/derkveenhof/dvf-web-tools.git
+cd dvf-web-tools
 npm install
 npm run dev
 ```
