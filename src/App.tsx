@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Copy, RefreshCw, Check, Shield, ShieldCheck, ShieldAlert, Lock, Info, Github } from 'lucide-react';
+import { Copy, RefreshCw, Check, Shield, ShieldCheck, ShieldAlert, Lock, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const UPPERCASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -608,9 +608,9 @@ export default function App() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Open GitHub repository"
-            className="text-[#999] hover:text-[#004b99] transition-colors self-center shrink-0"
+            className="text-[11px] font-semibold text-[#999] hover:text-[#004b99] transition-colors self-center shrink-0"
           >
-            <Github className="w-4 h-4" />
+            GitHub
           </a>
         </div>
       </motion.div>
