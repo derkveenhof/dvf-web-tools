@@ -1,6 +1,6 @@
-# DVF Pass
+# DVF Web Tools
 
-Een React/Vite webapp voor lokale generatie van wachtwoorden, tokens en GUID's, met een Vercel backend endpoint voor Publiek IP-informatie.
+Een React/Vite webapp met meerdere security- en utility-tools: wachtwoorden, tokens, GUID's en publiek IP-informatie via een backend endpoint op Vercel.
 
 > [!IMPORTANT]
 > **AI-gegenereerd en AI-doorontwikkeld**
@@ -16,6 +16,13 @@ DVF Pass genereert client-side:
 - publiek IP-overzicht via eigen backend endpoint.
 
 Voor de tab Publiek IP wordt een backend endpoint gebruikt.
+
+## Belangrijke context voor onderhoud
+
+- Repositorynaam is gewijzigd van `pass-and-opaque-token-generator` naar `dvf-web-tools`.
+- De tab Publiek IP gebruikt expliciet een eigen backend endpoint (`/api/my-ip`) en geen externe IP-websites.
+- API-bestanden in `api/` moeten ESM-syntax gebruiken (`import`/`export default`) omdat `package.json` `"type": "module"` gebruikt.
+- `lucide-react` draait op major v1; oude icon-export `Github` bestaat daar niet meer.
 
 ## Architectuur
 
