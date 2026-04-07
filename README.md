@@ -1,6 +1,6 @@
 # DVF Pass
 
-Een statische React/Vite webapp voor lokale generatie van wachtwoorden, tokens en GUID's.
+Een React/Vite webapp voor lokale generatie van wachtwoorden, tokens en GUID's, met een Vercel backend endpoint voor Publiek IP-informatie.
 
 > [!IMPORTANT]
 > **AI-gegenereerd en AI-doorontwikkeld**
@@ -19,10 +19,14 @@ Voor de tab Publiek IP wordt een backend endpoint gebruikt.
 
 ## Architectuur
 
-- **Runtime**: Browser-only, single-page app.
+- **Runtime**:
+  - Browser SPA voor generators.
+  - Vercel serverless API voor IP-informatie.
 - **Entry points**:
   - `index.html` → `src/main.tsx`
   - `src/main.tsx` → `src/App.tsx`
+- **Backend endpoint**:
+  - `api/my-ip.js` → `GET /api/my-ip`
 - **Styling**: Tailwind CSS 4 via Vite plugin + utility classes in JSX.
 - **Assets**:
   - `public/images/patroon.png` (achtergrond)
@@ -59,7 +63,8 @@ Voor de tab Publiek IP wordt een backend endpoint gebruikt.
 ## Security-notes
 
 - Generatie draait volledig lokaal in de browser.
-- Geen API-calls of server roundtrips voor gegenereerde waarden.
+- Voor wachtwoorden/tokens/GUID's zijn er geen API-calls of server roundtrips nodig.
+- Alleen de tab Publiek IP doet een backend call naar `/api/my-ip`.
 - Clipboard-copy gebruikt de browser `navigator.clipboard` API.
 
 ## Build en scripts
@@ -74,10 +79,11 @@ Voor de tab Publiek IP wordt een backend endpoint gebruikt.
 
 ## Deploy (Vercel)
 
-Dit project is een standaard statische Vite-app en werkt direct op Vercel met:
+Dit project draait op Vercel met een frontend build + serverless API endpoint:
 
 - Build command: `npm run build`
 - Output directory: `dist`
+- API route: `/api/my-ip` uit `api/my-ip.js`
 
 Er zijn momenteel geen runtime secrets/environment variabelen vereist voor productie.
 
@@ -98,6 +104,32 @@ Er zijn momenteel geen runtime secrets/environment variabelen vereist voor produ
   - `vercel.country`, `vercel.region`, `vercel.city`
 
 De app gebruikt hiervoor geen externe publieke IP-websites.
+
+## Troubleshooting
+
+### Publiek IP tab toont geen data
+
+Als de tab Publiek IP alleen `Onbekend` of een foutmelding toont:
+
+1. Controleer of `GET /api/my-ip` direct JSON teruggeeft.
+2. Controleer Vercel logs op runtime errors.
+
+### Vercel ESM fout (`require is not defined`)
+
+Dit project gebruikt `"type": "module"` in `package.json`. Daardoor worden bestanden in `api/` als ESM uitgevoerd.
+
+- Gebruik in API-files `import` / `export default`.
+- Gebruik geen `require(...)` of `module.exports` in `api/*.js`.
+
+Voorbeeld goed:
+
+```js
+import net from 'node:net';
+
+export default function handler(req, res) {
+  res.status(200).json({ ok: true });
+}
+```
 
 ## Lokale setup
 

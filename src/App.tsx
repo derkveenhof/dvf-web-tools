@@ -94,6 +94,11 @@ type IpInfoResponse = {
   };
 };
 
+type IpErrorInfo = {
+  status?: number;
+  message: string;
+};
+
 function getModeFromLocation(pathname: string, hostname: string): Mode {
   return getModeFromHostname(hostname) ?? getModeFromPath(pathname);
 }
@@ -122,11 +127,13 @@ export default function App() {
   const [ipInfo, setIpInfo] = useState<IpInfoResponse | null>(null);
   const [ipLoading, setIpLoading] = useState(false);
   const [ipError, setIpError] = useState('');
+  const [ipErrorInfo, setIpErrorInfo] = useState<IpErrorInfo | null>(null);
   const [copied, setCopied] = useState(false);
 
   const fetchIpInfo = useCallback(async () => {
     setIpLoading(true);
     setIpError('');
+    setIpErrorInfo(null);
 
     try {
       const response = await fetch('/api/my-ip', {
@@ -135,7 +142,17 @@ export default function App() {
       });
 
       if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
+        let backendMessage = '';
+        try {
+          const maybeJson = await response.json();
+          if (maybeJson && typeof maybeJson === 'object' && 'message' in maybeJson) {
+            backendMessage = String((maybeJson as { message: unknown }).message || '');
+          }
+        } catch {
+          // Ignore JSON parsing errors and keep generic message.
+        }
+
+        throw new Error(backendMessage || `Request failed with status ${response.status}`);
       }
 
       const data = (await response.json()) as IpInfoResponse;
@@ -143,6 +160,12 @@ export default function App() {
     } catch (error) {
       console.error('Failed to load IP info', error);
       setIpError('Kon IP-informatie niet ophalen via backend endpoint.');
+      const message = error instanceof Error ? error.message : 'Onbekende fout';
+      const statusMatch = message.match(/status\s+(\d{3})/i);
+      setIpErrorInfo({
+        status: statusMatch ? Number(statusMatch[1]) : undefined,
+        message,
+      });
       setIpInfo(null);
     } finally {
       setIpLoading(false);
@@ -420,6 +443,12 @@ export default function App() {
                       {ipInfo?.vercel?.city || '-'}, {ipInfo?.vercel?.region || '-'}, {ipInfo?.vercel?.country || '-'}
                     </div>
                     {ipError && <div className="text-red-600 font-semibold">{ipError}</div>}
+                    {ipErrorInfo && (
+                      <div className="text-[11px] text-red-700 leading-relaxed">
+                        {ipErrorInfo.status ? `Status: ${ipErrorInfo.status} | ` : ''}
+                        Detail: {ipErrorInfo.message}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <span className="text-lg font-mono text-[#333] font-medium selection:bg-[#004b99] selection:text-white leading-relaxed">
@@ -551,11 +580,14 @@ export default function App() {
               <div className="space-y-4">
                 <div className="p-4 bg-sky-50 rounded border border-sky-200">
                   <p className="text-xs text-sky-900 leading-relaxed mb-3">
-                    Deze tab gebruikt uitsluitend je eigen backend endpoint op <span className="font-mono">/api/my-ip</span>.
+                    Deze tab toont je IP-informatie via het beveiligde backend endpoint op <span className="font-mono">/api/my-ip</span>.
                     Er worden geen externe IP-websites gebruikt.
                   </p>
                   <p className="text-[11px] text-sky-800">
                     Ververs om de actuele requestgegevens opnieuw op te halen.
+                  </p>
+                  <p className="text-[11px] text-sky-700 mt-2">
+                    Let op: User-Agent en forwarded chain kunnen technische details over je verbinding tonen.
                   </p>
                 </div>
               </div>
