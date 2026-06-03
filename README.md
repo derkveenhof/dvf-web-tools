@@ -94,6 +94,42 @@ Dit project draait op Vercel met een frontend build + serverless API endpoint:
 
 Er zijn momenteel geen runtime secrets/environment variabelen vereist voor productie.
 
+## Container (Docker + GHCR)
+
+Deze repository bevat een container-setup die zowel de frontend als `GET /api/my-ip` draait.
+
+- `Dockerfile`: multi-stage build (Node 22) met runtime op poort `8080`.
+- `server.mjs`: serveert `dist/` als SPA en route `GET /api/my-ip`.
+- `.github/workflows/container-ghcr.yml`: bouwt en pusht image naar GHCR.
+
+### Publicatie naar GHCR
+
+De workflow draait automatisch bij:
+
+- push naar `main`
+- tags die starten met `v` (bijv. `v1.0.0`)
+- handmatig via `workflow_dispatch`
+
+Image naam:
+
+- `ghcr.io/<owner>/<repo>`
+
+Voorbeelden tags:
+
+- `main`
+- `latest` (alleen op default branch)
+- `sha-...`
+- `v1.0.0` (bij tag push)
+
+### Lokaal testen
+
+```bash
+docker build -t dvf-web-tools:local .
+docker run --rm -p 8080:8080 dvf-web-tools:local
+```
+
+Open daarna `http://localhost:8080`.
+
 ## Publiek IP endpoint
 
 - Endpoint: `GET /api/my-ip`
