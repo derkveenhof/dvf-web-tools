@@ -1,6 +1,6 @@
 # DVF Web Tools
 
-Een React/Vite webapp met meerdere security- en utility-tools: wachtwoorden, tokens, GUID's en publiek IP-informatie via een backend endpoint op Vercel.
+Een React/Vite webapp met meerdere security- en utility-tools: wachtwoorden, tokens, GUID's, Base64 UTF-8 conversie en publiek IP-informatie via een backend endpoint op Vercel.
 
 > [!IMPORTANT]
 > **AI-gegenereerd en AI-doorontwikkeld**
@@ -13,6 +13,7 @@ DVF Pass genereert client-side:
 - wachtwoorden (configureerbare charset + lengte),
 - OpenSSL-achtige Base64 tokens,
 - GUID's voor unieke identificatie,
+- UTF-8 string <-> Base64 conversie,
 - publiek IP-overzicht via eigen backend endpoint.
 
 Voor de tab Publiek IP wordt een backend endpoint gebruikt.

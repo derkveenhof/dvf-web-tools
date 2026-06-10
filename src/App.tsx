@@ -12,7 +12,7 @@ const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz';
 const NUMBERS = '0123456789';
 const SYMBOLS = '!@#$%^&*()_+-=[]{}|;:,.<>?';
 
-type Mode = 'password' | 'token' | 'guid' | 'ip';
+type Mode = 'password' | 'token' | 'guid' | 'ip' | 'base64';
 
 type ModeMetadata = {
   title: string;
@@ -24,6 +24,7 @@ const MODE_ROUTE: Record<Mode, string> = {
   token: '/token',
   guid: '/guid',
   ip: '/ip',
+  base64: '/base64',
 };
 
 const MODE_METADATA: Record<Mode, ModeMetadata> = {
@@ -42,6 +43,10 @@ const MODE_METADATA: Record<Mode, ModeMetadata> = {
   ip: {
     title: 'DVF Publiek IP',
     description: 'Bekijk je publiek IP-adres en forwarding-informatie via het backend endpoint.',
+  },
+  base64: {
+    title: 'DVF Base64',
+    description: 'Converteer strings naar Base64 en terug met UTF-8 encoding, volledig client-side.',
   },
 };
 
@@ -69,6 +74,7 @@ function getModeFromPath(pathname: string): Mode {
   if (pathname === '/token') return 'token';
   if (pathname === '/guid') return 'guid';
   if (pathname === '/ip') return 'ip';
+  if (pathname === '/base64') return 'base64';
   return 'password';
 }
 
@@ -77,8 +83,33 @@ function getModeFromHostname(hostname: string): Mode | undefined {
   if (subdomain === 'token') return 'token';
   if (subdomain === 'guid') return 'guid';
   if (subdomain === 'ip') return 'ip';
+  if (subdomain === 'base64' || subdomain === 'b64') return 'base64';
   if (subdomain === 'pass') return 'password';
   return undefined;
+}
+
+function utf8ToBase64(value: string): string {
+  const bytes = new TextEncoder().encode(value);
+  let binary = '';
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return window.btoa(binary);
+}
+
+function base64ToUtf8(value: string): string {
+  const compact = value.replace(/\s+/g, '');
+  const normalized = compact.replace(/-/g, '+').replace(/_/g, '/');
+  const remainder = normalized.length % 4;
+  const padded = remainder === 0 ? normalized : `${normalized}${'='.repeat(4 - remainder)}`;
+  const binary = window.atob(padded);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
 }
 
 type IpInfoResponse = {
@@ -128,6 +159,10 @@ export default function App() {
   const [ipLoading, setIpLoading] = useState(false);
   const [ipError, setIpError] = useState('');
   const [ipErrorInfo, setIpErrorInfo] = useState<IpErrorInfo | null>(null);
+  const [base64Direction, setBase64Direction] = useState<'encode' | 'decode'>('encode');
+  const [base64Input, setBase64Input] = useState('');
+  const [base64Output, setBase64Output] = useState('');
+  const [base64Error, setBase64Error] = useState('');
   const [copied, setCopied] = useState(false);
 
   const fetchIpInfo = useCallback(async () => {
@@ -175,6 +210,11 @@ export default function App() {
   const generateSecret = useCallback(() => {
     if (mode === 'ip') {
       void fetchIpInfo();
+      setCopied(false);
+      return;
+    }
+
+    if (mode === 'base64') {
       setCopied(false);
       return;
     }
@@ -241,6 +281,29 @@ export default function App() {
   }, [generateSecret]);
 
   useEffect(() => {
+    if (mode !== 'base64') return;
+
+    if (!base64Input) {
+      setBase64Output('');
+      setBase64Error('');
+      return;
+    }
+
+    try {
+      const output = base64Direction === 'encode' ? utf8ToBase64(base64Input) : base64ToUtf8(base64Input);
+      setBase64Output(output);
+      setBase64Error('');
+    } catch {
+      setBase64Output('');
+      setBase64Error(
+        base64Direction === 'decode'
+          ? 'Ongeldige Base64 of geen geldige UTF-8 inhoud.'
+          : 'Conversie mislukt voor deze invoer.'
+      );
+    }
+  }, [mode, base64Direction, base64Input]);
+
+  useEffect(() => {
     const metadata = MODE_METADATA[mode];
     const currentUrl = `${window.location.origin}${window.location.pathname}`;
 
@@ -280,7 +343,7 @@ export default function App() {
   };
 
   const copyToClipboard = async () => {
-    const valueToCopy = mode === 'ip' ? ipInfo?.ip ?? '' : password;
+    const valueToCopy = mode === 'ip' ? ipInfo?.ip ?? '' : mode === 'base64' ? base64Output : password;
     if (!valueToCopy) return;
     try {
       await navigator.clipboard.writeText(valueToCopy);
@@ -314,6 +377,14 @@ export default function App() {
       icon: Info,
       bg: 'bg-sky-50',
       description: 'Getoond via backend endpoint op basis van forwarded headers.'
+    };
+
+    if (mode === 'base64') return {
+      label: 'UTF-8 Conversie',
+      color: 'text-blue-700',
+      icon: Info,
+      bg: 'bg-blue-50',
+      description: 'Omzetting gebeurt volledig lokaal met UTF-8 als encoding.'
     };
     
     if (length < 12) return { 
@@ -368,13 +439,17 @@ export default function App() {
                 ? 'Token Generator'
                 : mode === 'guid'
                 ? 'GUID Generator'
-                : 'Publiek IP'}
+                : mode === 'ip'
+                ? 'Publiek IP'
+                : 'Base64 UTF-8'}
             </h1>
             <p className="text-sm text-[#666]">
               {mode === 'guid'
                 ? 'Maak een unieke identifier voor herkenning en koppelingen.'
                 : mode === 'ip'
                 ? 'Bekijk je publieke netwerkidentiteit via de backend.'
+                : mode === 'base64'
+                ? 'Converteer tekst en Base64 veilig in je browser met UTF-8.'
                 : `Beveilig uw account met een sterke ${mode === 'password' ? 'code' : 'token'}`}
             </p>
           </div>
@@ -406,13 +481,23 @@ export default function App() {
           >
             Publiek IP
           </button>
+          <button
+            onClick={() => navigateToMode('base64')}
+            className={`flex-1 py-3 text-sm font-bold transition-colors ${mode === 'base64' ? 'text-[#004b99] border-b-2 border-[#004b99]' : 'text-[#999] hover:text-[#666]'}`}
+          >
+            Base64 UTF-8
+          </button>
         </div>
 
         {/* Password Display Section */}
         <div className="p-8 space-y-6 md:min-h-[430px]">
           <div className="space-y-2">
             <label className="text-xs font-bold text-[#666] uppercase tracking-wider">
-              {mode === 'ip' ? 'Uw publieke ip-informatie' : `Uw nieuwe ${mode === 'password' ? 'wachtwoord' : mode === 'token' ? 'token' : 'guid'}`}
+              {mode === 'ip'
+                ? 'Uw publieke ip-informatie'
+                : mode === 'base64'
+                ? 'Uitkomst van de UTF-8 conversie'
+                : `Uw nieuwe ${mode === 'password' ? 'wachtwoord' : mode === 'token' ? 'token' : 'guid'}`}
             </label>
             <div className="relative">
               <div className="w-full bg-[#f9f9f9] border border-[#dcdcdc] rounded p-4 pr-20 break-all min-h-[80px] flex items-center justify-center text-center transition-all focus-within:border-[#004b99] focus-within:ring-1 focus-within:ring-[#004b99]">
@@ -450,6 +535,13 @@ export default function App() {
                       </div>
                     )}
                   </div>
+                ) : mode === 'base64' ? (
+                  <div className="w-full text-left">
+                    <span className="text-sm font-mono text-[#333] font-medium selection:bg-[#004b99] selection:text-white leading-relaxed whitespace-pre-wrap break-words">
+                      {base64Output || 'Voer tekst of Base64 in om de conversie te zien'}
+                    </span>
+                    {base64Error && <div className="text-xs text-red-600 mt-2">{base64Error}</div>}
+                  </div>
                 ) : (
                   <span className="text-lg font-mono text-[#333] font-medium selection:bg-[#004b99] selection:text-white leading-relaxed">
                     {password || 'Selecteer minimaal één optie'}
@@ -467,7 +559,7 @@ export default function App() {
                 <button
                   onClick={copyToClipboard}
                   className={`p-2 transition-colors rounded hover:bg-[#f0f0f0] ${copied ? 'text-emerald-600' : 'text-[#999] hover:text-[#004b99]'}`}
-                  title={mode === 'ip' ? 'IP kopiëren' : 'Kopiëren'}
+                  title={mode === 'ip' ? 'IP kopiëren' : mode === 'base64' ? 'Uitkomst kopiëren' : 'Kopiëren'}
                 >
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </button>
@@ -576,6 +668,54 @@ export default function App() {
                   </div>
                 </div>
               </div>
+            ) : mode === 'base64' ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 rounded border border-blue-200">
+                  <p className="text-xs text-blue-900 leading-relaxed mb-3">
+                    Deze functie werkt volledig client-side en gebruikt altijd UTF-8 voor encoding en decoding.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => setBase64Direction('encode')}
+                      className={`text-xs font-semibold px-3 py-2 rounded border transition-colors ${
+                        base64Direction === 'encode'
+                          ? 'bg-[#004b99] text-white border-[#004b99]'
+                          : 'bg-white text-[#004b99] border-[#004b99]/40 hover:border-[#004b99]'
+                      }`}
+                    >
+                      String -&gt; Base64
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBase64Direction('decode')}
+                      className={`text-xs font-semibold px-3 py-2 rounded border transition-colors ${
+                        base64Direction === 'decode'
+                          ? 'bg-[#004b99] text-white border-[#004b99]'
+                          : 'bg-white text-[#004b99] border-[#004b99]/40 hover:border-[#004b99]'
+                      }`}
+                    >
+                      Base64 -&gt; String
+                    </button>
+                  </div>
+
+                  <label className="text-[11px] font-semibold text-blue-900 block mb-2 uppercase tracking-wide">
+                    {base64Direction === 'encode' ? 'Invoer (UTF-8 tekst)' : 'Invoer (Base64)'}
+                  </label>
+                  <textarea
+                    value={base64Input}
+                    onChange={(e) => setBase64Input(e.target.value)}
+                    rows={4}
+                    spellCheck={false}
+                    className="w-full bg-white border border-blue-200 rounded p-3 text-xs font-mono text-[#333] leading-relaxed focus:outline-none focus:ring-1 focus:ring-[#004b99] focus:border-[#004b99]"
+                    placeholder={
+                      base64Direction === 'encode'
+                        ? 'Bijv: Hé AFAS 👋'
+                        : 'Bijv: SMOpIEFGQVMg8J+Riw=='
+                    }
+                  />
+                </div>
+              </div>
             ) : (
               <div className="space-y-4">
                 <div className="p-4 bg-sky-50 rounded border border-sky-200">
@@ -601,6 +741,8 @@ export default function App() {
           <p className="text-[11px] text-[#666] leading-relaxed flex-1">
             {mode === 'ip'
               ? 'Deze informatie komt uit het backend endpoint en weerspiegelt de headers van de huidige request.'
+              : mode === 'base64'
+              ? 'UTF-8 Base64 conversie draait volledig lokaal in je browser. Er wordt geen inhoud naar een server gestuurd.'
               : `Deze ${mode === 'password' ? 'code' : mode === 'token' ? 'token' : 'guid'} wordt lokaal op uw apparaat gegenereerd met de Web Crypto API. Niets wordt verzonden naar de server.`}
           </p>
           <a
