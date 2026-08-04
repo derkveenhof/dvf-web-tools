@@ -190,9 +190,42 @@ export default function handler(req, res) {
 
 ## Lokale setup
 
+Na het clonen van de repository heb je twee manieren om de app lokaal te draaien:
+
+| | `start-localhost.ps1` | `start-podman.ps1` |
+|---|---|---|
+| **Vereist** | Node.js + npm geïnstalleerd | Podman Desktop geïnstalleerd |
+| **Hoe** | Draait Vite direct op je machine | Bouwt een container image en draait die |
+| **Poort** | `3000` (hot-reload dev server) | `8080` (productiebuild in container) |
+| **Geschikt voor** | Actieve ontwikkeling | Testen van de productiebuild, of als je Node niet lokaal wilt installeren |
+
+### Via Node.js (aanbevolen voor ontwikkeling)
+
 ```bash
 git clone https://github.com/derkveenhof/dvf-web-tools.git
 cd dvf-web-tools
+```
+
+```powershell
+.\start-localhost.ps1
+```
+
+Of handmatig:
+
+```bash
 npm install
 npm run dev
 ```
+
+### Via Podman (geen Node.js vereist)
+
+```bash
+git clone https://github.com/derkveenhof/dvf-web-tools.git
+cd dvf-web-tools
+```
+
+```powershell
+.\start-podman.ps1 -RebuildImage
+```
+
+Open daarna `http://localhost:8080`.
