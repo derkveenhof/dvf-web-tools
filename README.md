@@ -97,11 +97,12 @@ Er zijn momenteel geen runtime secrets/environment variabelen vereist voor produ
 
 ## Container (Docker + GHCR)
 
-Deze repository bevat een container-setup die zowel de frontend als `GET /api/my-ip` draait.
+Deze repository bevat een container-setup die zowel de frontend als `GET /api/my-ip` draait. Gebruik bij voorkeur **Podman** (open-source, daemonless); Docker werkt ook.
 
-- `Dockerfile`: multi-stage build (Node 22) met runtime op poort `8080`.
+- `Dockerfile`: multi-stage build (Node 24) met runtime op poort `8080`.
 - `server.mjs`: serveert `dist/` als SPA en route `GET /api/my-ip`.
-- `.github/workflows/container-ghcr.yml`: bouwt en pusht image naar GHCR.
+- `.github/workflows/container-ghcr.yml`: bouwt en pusht image naar GHCR (`linux/amd64` + `linux/arm64`).
+- `start-podman.ps1`: PowerShell-script voor lokaal starten via Podman (start automatisch de Podman machine op als die niet draait).
 
 ### Publicatie naar GHCR
 
@@ -124,9 +125,21 @@ Voorbeelden tags:
 
 ### Lokaal testen
 
+Makkelijkst via het meegeleverde script (start Podman machine automatisch op):
+
+```powershell
+# Eerste keer of na code-wijzigingen:
+.\start-podman.ps1 -RebuildImage
+
+# Daarna (hergebruikt bestaande image):
+.\start-podman.ps1
+```
+
+Of handmatig:
+
 ```bash
-docker build -t dvf-web-tools:local .
-docker run --rm -p 8080:8080 dvf-web-tools:local
+podman build -t dvf-web-tools:local .
+podman run --rm -p 8080:8080 dvf-web-tools:local
 ```
 
 Open daarna `http://localhost:8080`.
