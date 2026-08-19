@@ -106,6 +106,19 @@ De documentroot blijft noodzakelijk omdat iedere webserver moet weten vanuit wel
 
 De meegebouwde `.htaccess` handelt de SPA-routes en `GET /api/my-ip` af. Na de eerste push van deze configuratie maakt GitHub Actions de branch `cloud86` automatisch aan. Stel daarna in Cloud86 automatische deployment voor die branch in.
 
+### Securityheaders
+
+De meegebouwde `.htaccess` stelt op alle responses de volgende securityheaders in:
+
+- `Content-Security-Policy`: staat alleen scripts, styles, afbeeldingen, fonts en API-calls van dezelfde origin toe; blokkeert plugins, framing en inline scripts. Alleen dynamische style-attributen zijn toegestaan omdat Motion die voor animaties gebruikt.
+- `Permissions-Policy`: schakelt ongebruikte browserfeatures uit en staat clipboard-write alleen voor de eigen origin toe.
+- `Referrer-Policy: no-referrer`: verstuurt geen referrer-informatie naar andere pagina's.
+- `X-Content-Type-Options: nosniff`: voorkomt MIME-type-sniffing.
+- `X-Frame-Options: DENY`: voorkomt dat de applicatie in een frame wordt ingesloten.
+- `X-XSS-Protection: 1; mode=block`: biedt aanvullende bescherming in oudere browsers; moderne browsers vertrouwen op de CSP.
+
+De configuratie bevat geen domeinnaam en werkt daardoor voor iedere Cloud86-site waarop de branch `cloud86` in de documentroot wordt gepubliceerd.
+
 ## Container (Docker + GHCR)
 
 Deze repository bevat een container-setup die zowel de frontend als `GET /api/my-ip` draait. Gebruik bij voorkeur **Podman** (open-source, daemonless); Docker werkt ook.
