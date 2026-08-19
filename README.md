@@ -1,6 +1,6 @@
 # DVF Web Tools
 
-Een React/Vite webapp met meerdere security- en utility-tools: wachtwoorden, tokens, GUID's, Base64 UTF-8 conversie en publiek IP-informatie via een backend endpoint op Vercel.
+Een React/Vite webapp met meerdere security- en utility-tools: wachtwoorden, tokens, GUID's, Base64 UTF-8 conversie en publiek IP-informatie. De productieversie draait als statische Vite-build met een klein PHP-endpoint op Cloud86.
 
 > [!IMPORTANT]
 > **AI-gegenereerd en AI-doorontwikkeld**
@@ -22,20 +22,21 @@ Voor de tab Publiek IP wordt een backend endpoint gebruikt.
 
 - Repositorynaam is gewijzigd van `pass-and-opaque-token-generator` naar `dvf-web-tools`.
 - De tab Publiek IP gebruikt expliciet een eigen backend endpoint (`/api/my-ip`) en geen externe IP-websites.
-- API-bestanden in `api/` moeten ESM-syntax gebruiken (`import`/`export default`) omdat `package.json` `"type": "module"` gebruikt.
+- Het PHP-endpoint voor Cloud86 staat in `public/api/my-ip.php` en wordt tijdens de Vite-build naar `dist/api/my-ip.php` gekopieerd.
+- Het JavaScript-endpoint in `api/my-ip.js` wordt alleen door de optionele container-runtime gebruikt.
 - `lucide-react` draait op major v1; oude icon-export `Github` bestaat daar niet meer.
 
 ## Architectuur
 
 - **Runtime**:
-  - Browser SPA voor generators.
-  - Vercel serverless API voor IP-informatie.
+  - Browser-SPA voor de tools.
+  - PHP 8.3-endpoint voor IP-informatie op Cloud86.
 - **Entry points**:
   - `index.html` → `src/main.tsx`
   - `src/main.tsx` → `src/App.tsx`
 - **Backend endpoint**:
-  - `api/my-ip.js` → `GET /api/my-ip` op Vercel en in de container.
-  - `public/api/my-ip.php` → `GET /api/my-ip` op PHP-webhosting.
+  - `public/api/my-ip.php` → `GET /api/my-ip` op Cloud86.
+  - `api/my-ip.js` → `GET /api/my-ip` in de optionele Node.js-container.
 - **Styling**: Tailwind CSS 4 via Vite plugin + utility classes in JSX.
 - **Assets**:
   - `public/images/patroon.png` (achtergrond)
@@ -86,16 +87,6 @@ Voor de tab Publiek IP wordt een backend endpoint gebruikt.
 - `npm run lint` → TypeScript typecheck (`tsc --noEmit`).
 - `npm run clean` → verwijdert `dist/` (cross-platform node script).
 
-## Deploy (Vercel)
-
-Dit project draait op Vercel met een frontend build + serverless API endpoint:
-
-- Build command: `npm run build`
-- Output directory: `dist`
-- API route: `/api/my-ip` uit `api/my-ip.js`
-
-Er zijn momenteel geen runtime secrets/environment variabelen vereist voor productie.
-
 ## Deploy (Cloud86/Plesk)
 
 De workflow `.github/workflows/deploy-cloud86.yml` bouwt iedere push naar `main` en publiceert alleen de inhoud van `dist/` naar de branch `cloud86`. Deze artifactbranch bevat geen TypeScript-broncode, Node.js-configuratie of hardcoded domeinnaam.
@@ -108,6 +99,8 @@ Configureer een nieuwe site in Cloud86 als volgt:
 - Buildcommando op Cloud86: geen.
 - Node.js-runtime: niet nodig.
 - PHP: 8.3 of nieuwer.
+
+Er zijn geen runtime secrets of omgevingsvariabelen vereist.
 
 De documentroot blijft noodzakelijk omdat iedere webserver moet weten vanuit welke map bestanden worden geserveerd. Dit is uitsluitend een Cloud86/Plesk-instelling; het pad en de domeinnaam horen niet in GitHub te staan. Omdat `index.html` direct in de root van de branch `cloud86` staat, kan dezelfde branch zonder aanpassingen naar de documentroot van ieder domein worden uitgerold.
 
@@ -165,7 +158,8 @@ Open daarna `http://localhost:8080`.
 ## Publiek IP endpoint
 
 - Endpoint: `GET /api/my-ip`
-- Runtime: Vercel serverless function, Node.js-container of PHP-webhosting
+- Productieruntime: PHP 8.3 op Cloud86
+- Optionele lokale runtime: Node.js-container
 - Gebruikte headers/bronvolgorde:
   - `x-forwarded-for` (eerste valide IP)
   - `x-real-ip`
@@ -176,7 +170,6 @@ Open daarna `http://localhost:8080`.
   - `forwardedFor`
   - `userAgent`
   - `timestampUtc`
-  - `vercel.country`, `vercel.region`, `vercel.city`
 
 De app gebruikt hiervoor geen externe publieke IP-websites.
 
@@ -187,24 +180,8 @@ De app gebruikt hiervoor geen externe publieke IP-websites.
 Als de tab Publiek IP alleen `Onbekend` of een foutmelding toont:
 
 1. Controleer of `GET /api/my-ip` direct JSON teruggeeft.
-2. Controleer Vercel logs op runtime errors.
-
-### Vercel ESM fout (`require is not defined`)
-
-Dit project gebruikt `"type": "module"` in `package.json`. Daardoor worden bestanden in `api/` als ESM uitgevoerd.
-
-- Gebruik in API-files `import` / `export default`.
-- Gebruik geen `require(...)` of `module.exports` in `api/*.js`.
-
-Voorbeeld goed:
-
-```js
-import net from 'node:net';
-
-export default function handler(req, res) {
-  res.status(200).json({ ok: true });
-}
-```
+2. Controleer in Cloud86 of PHP 8.3 actief is en `.htaccess`-rewrites zijn toegestaan.
+3. Controleer de foutlog van de website in Plesk.
 
 ## Lokale setup
 

@@ -118,11 +118,6 @@ type IpInfoResponse = {
   forwardedFor: string[];
   userAgent: string;
   timestampUtc: string;
-  vercel?: {
-    country?: string;
-    region?: string;
-    city?: string;
-  };
 };
 
 type IpErrorInfo = {
@@ -522,10 +517,6 @@ export default function App() {
                     <div>
                       <span className="font-bold text-[#004b99]">Timestamp (UTC):</span>{' '}
                       {ipInfo?.timestampUtc || 'Onbekend'}
-                    </div>
-                    <div>
-                      <span className="font-bold text-[#004b99]">Vercel locatie:</span>{' '}
-                      {ipInfo?.vercel?.city || '-'}, {ipInfo?.vercel?.region || '-'}, {ipInfo?.vercel?.country || '-'}
                     </div>
                     {ipError && <div className="text-red-600 font-semibold">{ipError}</div>}
                     {ipErrorInfo && (

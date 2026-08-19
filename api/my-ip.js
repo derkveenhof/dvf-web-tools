@@ -81,10 +81,5 @@ export default function handler(req, res) {
     forwardedFor,
     userAgent,
     timestampUtc: new Date().toISOString(),
-    vercel: {
-      country: getHeaderValue(req, 'x-vercel-ip-country'),
-      region: getHeaderValue(req, 'x-vercel-ip-country-region'),
-      city: getHeaderValue(req, 'x-vercel-ip-city'),
-    },
   });
 }

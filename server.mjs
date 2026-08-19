@@ -32,7 +32,7 @@ function sendJson(res, statusCode, payload) {
   res.end(body);
 }
 
-function createVercelLikeResponse(res) {
+function createHandlerResponse(res) {
   return {
     setHeader(name, value) {
       res.setHeader(name, value);
@@ -94,7 +94,7 @@ const server = createServer(async (req, res) => {
 
   if (url.pathname === '/api/my-ip') {
     try {
-      myIpHandler(req, createVercelLikeResponse(res));
+      myIpHandler(req, createHandlerResponse(res));
     } catch (error) {
       sendJson(res, 500, {
         error: 'Internal server error',
