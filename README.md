@@ -110,7 +110,7 @@ De meegebouwde `.htaccess` handelt de SPA-routes en `GET /api/my-ip` af. Na de e
 
 De meegebouwde `.htaccess` stelt op alle responses de volgende securityheaders in:
 
-- `Content-Security-Policy`: staat alleen scripts, styles, afbeeldingen, fonts en API-calls van dezelfde origin toe; blokkeert plugins, framing en inline scripts. Alleen dynamische style-attributen zijn toegestaan omdat Motion die voor animaties gebruikt.
+- `Content-Security-Policy`: staat alleen scripts, styles, afbeeldingen, fonts en API-calls van dezelfde origin toe; blokkeert plugins, framing, inline scripts en inline styles.
 - `Permissions-Policy`: schakelt ongebruikte browserfeatures uit en staat clipboard-write alleen voor de eigen origin toe.
 - `Referrer-Policy: no-referrer`: verstuurt geen referrer-informatie naar andere pagina's.
 - `X-Content-Type-Options: nosniff`: voorkomt MIME-type-sniffing.

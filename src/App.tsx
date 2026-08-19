@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Copy, RefreshCw, Check, Shield, ShieldCheck, ShieldAlert, Lock, Info } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 
 const UPPERCASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz';
@@ -408,18 +407,9 @@ export default function App() {
   const strength = getStrength();
 
   return (
-    <div 
-      className="min-h-screen bg-[#f0f2f5] flex items-center justify-center p-4 font-sans text-[#333]"
-      style={{ 
-        backgroundImage: 'url(/images/patroon.png)',
-        backgroundRepeat: 'repeat',
-        backgroundPosition: 'center'
-      }}
-    >
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-[480px] bg-white shadow-[0_2px_20px_rgba(0,0,0,0.15)] border border-[#dcdcdc] rounded-lg overflow-hidden relative z-10"
+    <div className="app-background min-h-screen bg-[#f0f2f5] flex items-center justify-center p-4 font-sans text-[#333]">
+      <div
+        className="app-enter w-full max-w-[480px] bg-white shadow-[0_2px_20px_rgba(0,0,0,0.15)] border border-[#dcdcdc] rounded-lg overflow-hidden relative z-10"
       >
         {/* AFAS Style Header */}
         <div className="bg-white p-8 border-b border-[#eee]">
@@ -556,18 +546,11 @@ export default function App() {
                 </button>
               </div>
             </div>
-            <AnimatePresence>
-              {copied && (
-                <motion.div 
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="text-[10px] text-emerald-600 font-bold text-right pr-2"
-                >
-                  Gekopieerd naar klembord!
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {copied && (
+              <div className="copy-notification text-[10px] text-emerald-600 font-bold text-right pr-2">
+                Gekopieerd naar klembord!
+              </div>
+            )}
           </div>
 
           {/* Strength Indicator */}
@@ -746,7 +729,7 @@ export default function App() {
             GitHub
           </a>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

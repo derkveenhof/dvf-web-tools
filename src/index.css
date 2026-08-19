@@ -1,1 +1,39 @@
 @import "tailwindcss";
+
+.app-background {
+	background-image: url('/images/patroon.png');
+	background-position: center;
+	background-repeat: repeat;
+}
+
+.app-enter {
+	animation: app-enter 300ms ease-out both;
+}
+
+.copy-notification {
+	animation: copy-notification 180ms ease-out both;
+}
+
+@keyframes app-enter {
+	from {
+		opacity: 0;
+		transform: scale(0.98);
+	}
+
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@keyframes copy-notification {
+	from {
+		opacity: 0;
+		transform: translateY(-5px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
