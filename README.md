@@ -8,7 +8,7 @@ Een React/Vite webapp met meerdere security- en utility-tools: wachtwoorden, tok
 
 ## Doel en scope
 
-DVF Pass genereert client-side:
+DVF Web Tools biedt:
 
 - wachtwoorden (configureerbare charset + lengte),
 - OpenSSL-achtige Base64 tokens,
