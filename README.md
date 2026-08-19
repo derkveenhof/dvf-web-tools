@@ -34,7 +34,8 @@ Voor de tab Publiek IP wordt een backend endpoint gebruikt.
   - `index.html` → `src/main.tsx`
   - `src/main.tsx` → `src/App.tsx`
 - **Backend endpoint**:
-  - `api/my-ip.js` → `GET /api/my-ip`
+  - `api/my-ip.js` → `GET /api/my-ip` op Vercel en in de container.
+  - `public/api/my-ip.php` → `GET /api/my-ip` op PHP-webhosting.
 - **Styling**: Tailwind CSS 4 via Vite plugin + utility classes in JSX.
 - **Assets**:
   - `public/images/patroon.png` (achtergrond)
@@ -95,6 +96,23 @@ Dit project draait op Vercel met een frontend build + serverless API endpoint:
 
 Er zijn momenteel geen runtime secrets/environment variabelen vereist voor productie.
 
+## Deploy (Cloud86/Plesk)
+
+De workflow `.github/workflows/deploy-cloud86.yml` bouwt iedere push naar `main` en publiceert alleen de inhoud van `dist/` naar de branch `cloud86`. Deze artifactbranch bevat geen TypeScript-broncode, Node.js-configuratie of hardcoded domeinnaam.
+
+Configureer een nieuwe site in Cloud86 als volgt:
+
+- Git-repository: deze GitHub-repository.
+- Branch: `cloud86`.
+- Deploymentpad: de documentroot van de site.
+- Buildcommando op Cloud86: geen.
+- Node.js-runtime: niet nodig.
+- PHP: 8.3 of nieuwer.
+
+De documentroot blijft noodzakelijk omdat iedere webserver moet weten vanuit welke map bestanden worden geserveerd. Dit is uitsluitend een Cloud86/Plesk-instelling; het pad en de domeinnaam horen niet in GitHub te staan. Omdat `index.html` direct in de root van de branch `cloud86` staat, kan dezelfde branch zonder aanpassingen naar de documentroot van ieder domein worden uitgerold.
+
+De meegebouwde `.htaccess` handelt de SPA-routes en `GET /api/my-ip` af. Na de eerste push van deze configuratie maakt GitHub Actions de branch `cloud86` automatisch aan. Stel daarna in Cloud86 automatische deployment voor die branch in.
+
 ## Container (Docker + GHCR)
 
 Deze repository bevat een container-setup die zowel de frontend als `GET /api/my-ip` draait. Gebruik bij voorkeur **Podman** (open-source, daemonless); Docker werkt ook.
@@ -147,7 +165,7 @@ Open daarna `http://localhost:8080`.
 ## Publiek IP endpoint
 
 - Endpoint: `GET /api/my-ip`
-- Runtime: Vercel serverless function
+- Runtime: Vercel serverless function, Node.js-container of PHP-webhosting
 - Gebruikte headers/bronvolgorde:
   - `x-forwarded-for` (eerste valide IP)
   - `x-real-ip`
